@@ -1,0 +1,21 @@
+%{ Used to report threats detected by ClamAV }%
+%TMPL:INCLUDE{"oops"}%
+
+%TMPL:DEF{"titleaction"}%%MAKETEXT{"(<nop>ClamAV AntiVirus Error)"}% %TMPL:END%
+
+%TMPL:DEF{"webaction"}% *%MAKETEXT{"Attention"}%* %TMPL:END%
+
+%TMPL:DEF{"heading"}%%MAKETEXT{"Attachment Upload Error"}%%TMPL:END%
+
+%TMPL:DEF{"topicactionbuttons"}% [[%WEB%.%TOPIC%][%MAKETEXT{"OK"}%]] %TMPL:END%
+
+%TMPL:DEF{"clamav_offline"}%%MAKETEXT{"The !ClamAV !AntiVirus engine appears to be offline.  Attachment upload is disabled."}%%TMPL:END%
+%TMPL:DEF{"clamav_upload"}%%MAKETEXT{"During upload of ([_1]) a threat was detected by !ClamAV. If you believe this is a false error, please notify your [_2] administrator." args="%PARAM1%, <nop>%WIKITOOLNAME%"}%
+
+%MAKETEXT{"The following threat was detected:"}%
+   * ==%PARAM2%==
+%TMPL:END%
+
+%TMPL:DEF{"message"}%
+%INSTANTIATE%
+%TMPL:END%

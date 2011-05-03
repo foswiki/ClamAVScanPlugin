@@ -1,0 +1,20 @@
+%{ Used to report threats detected by ClamAV }%
+%TMPL:INCLUDE{"oops"}%
+
+%TMPL:DEF{"titleaction"}%%MAKETEXT{"(<nop>ClamAV AntiVirus Error)"}% %TMPL:END%
+
+%TMPL:DEF{"webaction"}% *%MAKETEXT{"Attention"}%* %TMPL:END%
+
+%TMPL:DEF{"heading"}%%MAKETEXT{"Topic Save Error"}%%TMPL:END%
+
+%TMPL:DEF{"topicactionbuttons"}% [[%WEB%.%TOPIC%][%MAKETEXT{"OK"}%]] %TMPL:END%
+
+%TMPL:DEF{"message"}%
+%MAKETEXT{"During save of [_1] a threat was detected by !ClamAV. If you believe this is a false error, please notify your [_2] administrator." args="<nop>%WEB%.%TOPIC%, <nop>%WIKITOOLNAME%"}%
+
+%MAKETEXT{"The following threat was detected:"}%
+   * ==%PARAM1%==
+
+%MAKETEXT{"Go back in your browser and modify the topic to remove the threat."}% 
+
+%TMPL:END%

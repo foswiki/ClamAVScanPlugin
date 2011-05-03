@@ -1,0 +1,120 @@
+%META:TOPICPARENT{name="Plugins"}%
+<!--
+One line description, required for extensions repository catalog.
+   * Set SHORTDESCRIPTION = Scans attachments for viruses during upload using <nop>ClamAV
+-->
+<div style="float:right">
+<img src="%ATTACHURLPATH%/ClamAVScanLogo.png" alt="ClamAV Scan Plugin Logo" title="ClamAVScanPlugin Logo" /> 
+</div>
+
+---+!! <nop>ClamAV Scan Plugin
+
+%SHORTDESCRIPTION%
+
+This plugin intercepts each attachment during upload and passes the content of
+the attachment to the =clamd= daemon for virus scanning.  The attachment is
+only saved if the virus scan does not detect any threats.  
+
+From the description of !ClamAV at http://www.clamav.net
+
+<noautolink>
+<blockquote class="foswikiHelp">
+ClamAV is an open source (GPL) antivirus engine designed for detecting
+Trojans, viruses, malware and other malicious threats. It is the de facto
+standard for mail gateway scanning. It provides a high performance
+mutli-threaded scanning daemon, command line utilities for on demand file
+scanning, and an intelligent tool for automatic signature updates. The core
+ClamAV library provides numerous file format detection mechanisms, file
+unpacking support, archive support, and multiple signature languages for
+detecting threats.
+</blockquote>
+</noautolink>
+
+---++ Usage
+
+No changes to existing topics are required by this plugin.  Once the plugin is enabled, attachments will be scanned during upload.  If a virus or other threat is detected, the upload will thow an exception, and the attachment will not be saved.  The scan is performed before the attachment is saved to disk.
+
+This plugin is also able to scan the topic text prior to save.  This enables scanning for embedded MS Script encoded threats and for certain sensitive data formats such as credit card numbers and social security numbers. See the !ClamAV documentation on HTML scanning and the Data Loss Prevention (DLP) module for further information.
+
+---+++ =%<nop>CLAMAVSTATUS%=
+
+This macro returns status information from the =clamd= daemon.  Or reports any
+failure messages if unable to connect to the clamd socket.
+
+%CLAMAVSTATUS{}%
+
+---+++ Scanning existing attachments.
+
+The current attachments and attachment rcs files can be scanned using a rest handler.
+Each attachment and corresponding rcs file if it exists is passed to clamd for
+scanning.  Results of the scan are reported back in the rest results.
+
+All attachments are scanned.  There is no facility to request scan of an
+individual attachment.
+
+This operation is restricted to users in the Admin group
+.
+%SCRIPTURL{rest}%/ClamAVScanPlugin/scan/Web/Topic
+
+---+++ Reloading the Virus Signatures.
+
+This plugin includes a rest handler to force reload of the virus signatures.
+This operation is restricted to users in the Admin group.   The plugin sends a
+command to the clamd daemon to request the reload. 
+
+Note that reloading the signatures does not download newer signatures from
+!ClamAV.  It only reloads the existing signature files into the clamd daemon.
+
+[[%SCRIPTURL{rest}%/ClamAVScanPlugin/reload][Reload Signatures]]
+
+---++ Preferences
+
+This plugin does not use any preferences.  All configuration is done using
+[[%SCRIPTURL{"configure"}%][%ICON{"wrench"}% configure]]
+
+---++ Installation
+%$INSTALL_INSTRUCTIONS%
+
+%X% *Note:* This plugin depends upon a properly configured and operational
+version of the =clamd= daemon.  Actual scans are executed by the clamd daemon.
+!ClamAV must be local to the Foswiki system.
+
+---++ Configuration
+
+This plugin uses the following settings:
+<!--
+   * Set CC = &#58;&#58;
+-->
+
+   $ ==$Foswiki%CC%cfg{Plugins}{ClamAVScanPlugin}{clamdPort}==: The unix socket used to communicate with the =clamd= daemon.  Defaults to =/tmp/clamd=
+
+   $ ==$Foswiki%CC%cfg{Plugins}{ClamAVScanPlugin}{mandatoryScan}==: Should attachments be blocked if clamd is unavailable to scan attachments. If this option is enabled, any attempt to attach a file will result in an  error when clamd is not available.  Default is disabled - Attachments will be added without scanning if =clamd= is unavailable.
+
+   $ ==$Foswiki%CC%cfg{Plugins}{ClamAVScanPlugin}{scanTopics}==: !ClamAV can perform HTML scanning for certain embedded script threats.  It can also perform "Data Loss Prevention".  When DLP is enabled in clamd.conf, it will detect certain data such as social security numbers and credit card numbers in content.  Default is disabled.  Enable this option to perform scanning of topic data for structured data and embedded HTML threats.  If a threat is detected, !ClamAV will block the topic save.
+
+<div class="foswikiAlert">
+*Caution:* In addition to these settings, the =clamd.conf= setting =StreamMaxLength= needs to be large enough to accommodate the largest Foswiki setting for ATTACHFILESIZELIMIT.  Currently %ATTACHFILESIZELIMIT% in this web, this value can be set per web.
+</div>
+
+---++ Info
+
+*Note:* The module =Foswiki::Plugins::ClamAVScanPlugin::ClamAV= module is based upon the CPAN module =File::Scan::ClamAV=.  Copyright information from that module:
+<verbatim>
+AUTHOR
+  Colin Faber <cfaber@fpsn.net> All Rights Reserved.
+  Originally based on the Clamd module authored by Matt Sergeant.
+
+LICENSE
+  This is free software and may be used and distribute under terms of perl itself.
+</verbatim>
+
+|  Author: | GeorgeClark |
+|  Copyright: | &copy; 2011, Foswiki Contributors |
+|  License: | GPL ([[http://www.gnu.org/copyleft/gpl.html][GNU General Public License]]) |
+|  Release: | %$RELEASE% |
+|  Version: | %$VERSION% |
+|  Change&nbsp;History: | <!-- versions below in reverse order -->&nbsp; |
+|  1.0.0 (XX Mmm 20XX): | Initial version |
+|  Home: | http://foswiki.org/Extensions/%TOPIC% |
+|  Support: | http://foswiki.org/Support/%TOPIC% |
+
