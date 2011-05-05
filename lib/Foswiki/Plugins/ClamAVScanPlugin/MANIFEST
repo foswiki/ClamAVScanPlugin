@@ -4,6 +4,8 @@ data/System/VarCLAMAVSTATUS.txt 0644 Documentation page
 lib/Foswiki/Plugins/ClamAVScanPlugin.pm 0444 Perl module
 lib/Foswiki/Plugins/ClamAVScanPlugin/Config.spec 0444 Configuration
 lib/Foswiki/Plugins/ClamAVScanPlugin/ClamAV.pm 0444 Scan module
-pub/System/ClamAVScanPlugin/ClamAVScanLogo.gif 644 ClamAV Logo
+pub/System/ClamAVScanPlugin/ClamAVScanLogo.png 644 ClamAV Logo
 templates/oopsclamavattach.tmpl 0444 Alert template for Attach
 templates/oopsclamavsave.tmpl 0444 Alert template for Save
+test/unit/ClamAVScanPluginSuite.pm 0444
+test/unit/ClamAVScanPluginTests.pm 0444

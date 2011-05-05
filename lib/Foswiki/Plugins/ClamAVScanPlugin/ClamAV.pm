@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use File::Find qw(find);
 use IO::Socket;
+#use Socket::PassAccessRights;   # included by "eval" in scan subroutine
 
 sub new {
     my $this = shift;
@@ -40,7 +41,7 @@ sub version {
 =begin TML
 ---++ Ping
 
-Pings the clamd to check it is alive. Returns true if it is alive, false if it is dead. 
+Pings the clamd to check it is alive. Returns true if it is alive, false if it is dead.
 
 =cut
 
@@ -66,11 +67,14 @@ sub ping {
 =begin TML
 ---++ scan($dir_or_file)
 
-Scan a directory or a file. Note that the resource must be readable by the user the ClamdAV clamd service is running as.
+Scan a directory or a file.
 
-Returns a hash of C<< filename => virusname >> mappings.
+If Socket::PassAccessRights is available, then a file descriptor will be passed to clamd.  Otherwise the file name
+is passed, and __the resource must be readable by the user the ClamdAV clamd service is running as__.
 
-On error nothing is returned and the errstr() error handler is set. If no virus is found nothing will be returned and the errstr() error handle won't be set.
+Returns an array of
+
+On error nothing is returned and the errstr() error handler is set.
 
 =cut
 
@@ -78,24 +82,17 @@ sub scan {
     my $this = shift;
     my @results;
 
+    my $cmd = ( eval "use Socket::PassAccessRights;1;" ? 'FILDES' : 'SCAN' ) ;
+    $cmd = 'SCAN' if ( $this->{forceScan} );   # test purposes
+
     if ( $this->{find_all} ) {
-        @results = $this->_scan( 'SCAN', @_ );
+        @results = $this->_scan( $cmd, @_ );
     }
     else {
-        @results = $this->_scan_shallow( 'SCAN', @_ );
+        @results = $this->_scan_shallow( $cmd, @_ );
     }
 
-    my %f;
-    for (@results) {
-        $f{ $_->[0] } = $_->[1];
-    }
-
-    if (%f) {
-        return %f;
-    }
-    else {
-        return;
-    }
+    return @results;
 }
 
 =begin TML
@@ -127,7 +124,6 @@ sub scan_stream {
             next if ( $! == Errno::EINTR );
             die "system read error: $!\n";
         }
-        print STDERR "READ $r bytes\n";
 
         my $out = pack( 'N', ($r) ) . $transfer;
         $this->_send( $conn, $out );
@@ -225,7 +221,7 @@ sub errstr {
 
 ---++ ClassMethod _scan();
 
-Internal function to scan a file or iles.
+Internal function to scan a file or directory of files.
 
 =cut
 sub _scan {
@@ -254,8 +250,9 @@ sub _scan {
     }
 
     if ( !@files ) {
-        return $this->errstr(
+        $this->errstr(
             "scan() requires that you specify a directory or file to scan");
+        return undef;
     }
 
     my @results;
@@ -271,7 +268,7 @@ sub _scan {
 
 ---++ ClassMethod _scan_shallow();
 
-Internal function to scan files, stopping on the first occurrence. 
+Internal function to scan files, stopping on the first occurrence.
 
 =cut
 sub _scan_shallow {
@@ -287,38 +284,27 @@ sub _scan_shallow {
 
     my @dirs = @_;
     my @results;
+    my $fd;
 
     for my $file (@dirs) {
         my $conn = $this->_get_connection || return;
-        $this->_send( $conn, "$cmd $file\n" );
+
+        if ( $cmd eq 'SCAN') {
+            $this->_send( $conn, "zSCAN $file\x00" );
+            }
+        else {
+            $this->_send( $conn, "zFILDES\x00" );
+            open( $fd, '<', $file );
+            Socket::PassAccessRights::sendfd(fileno($conn), fileno($fd)) or die;
+            close $fd;
+            }
 
         for my $result ( $conn->getline ) {
             chomp($result);
-
-            my @result = split( /\s/, $result );
-
-            chomp( my $code = pop @result );
-            if ( $code !~ /^(?:ERROR|FOUND|OK)$/ ) {
-                $conn->close;
-
-                return $this->errstr(
-                    "Unknown response code from ClamAV service: $code - "
-                      . join( " ", @result ) );
-            }
-
-            my $virus = pop @result;
-            my $file = join( " ", @result );
-            $file =~ s/:$//g;
-
-            if ( $code eq 'ERROR' ) {
-                $conn->close;
-
-                return $this->errstr(
-                    "Error while processing file: $file $virus");
-            }
-            elsif ( $code eq 'FOUND' ) {
-                push @results, [ $file, $virus, $code ];
-            }
+            $result =~ s/\x00$//g;   # remove null terminator if present;
+            my ($fn, $msg, $code) = $result =~ m/^(.*?):\s?(.*?)\s?(OK|ERROR|FOUND)$/;
+            my $fname = ( $cmd eq 'SCAN' ) ? $fn : $file;
+            push @results, [ $fname, $msg, $code ];
         }
 
         $conn->close;

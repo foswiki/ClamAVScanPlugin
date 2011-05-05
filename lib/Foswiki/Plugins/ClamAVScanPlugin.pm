@@ -105,7 +105,7 @@ sub _CLAMAVSTATUS {
 
 =begin TML
 
----++ ClassMethod beforeUploadHandler() -> $boolean
+---++ ClassMethod beforeUploadHandler()
 
 Intercepts the newly uploaded attachment before it has been stored in Foswiki.
 
@@ -145,7 +145,7 @@ sub beforeUploadHandler {
 
 =begin TML
 
----++ ClassMethod beforeSaveHandler() -> $boolean
+---++ ClassMethod beforeSaveHandler()
 
 Intercepts an upated topic prior to save.
 
