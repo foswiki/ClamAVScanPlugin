@@ -49,12 +49,20 @@ The current attachments and attachment rcs files can be scanned using a rest han
 Each attachment and corresponding rcs file if it exists is passed to clamd for
 scanning.  Results of the scan are reported back in the rest results.
 
-All attachments are scanned.  There is no facility to request scan of an
+All attachments and the corresponding rcs =,v= files are scanned.  There is no facility to request scan of an
 individual attachment.
 
 This operation is restricted to users in the Admin group
-.
-%SCRIPTURL{rest}%/ClamAVScanPlugin/scan/Web/Topic
+---++++ Web interface:
+
+   * %SCRIPTURL{rest}%/ClamAVScanPlugin/scan?topic=System.PatternSkin
+
+---++++ Shell interface
+
+<verbatim>
+   cd [Foswiki/bin] directory
+   ./rest /ClamAVScanPlugin/scan -topic System.PatternSkin
+</verbatim>
 
 ---+++ Reloading the Virus Signatures.
 

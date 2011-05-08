@@ -28,7 +28,7 @@ my $clamdPort;              # Unix socket used to communicate with clamd daemon
 
 =begin TML
 
----++ ClassMethod initPlugin($topic, $web, $user) -> $boolean
+---++ StaticMethod initPlugin($topic, $web, $user) -> $boolean
 
 =cut
 
@@ -50,10 +50,10 @@ sub initPlugin {
     Foswiki::Func::registerTagHandler( 'CLAMAVSTATUS', \&_CLAMAVSTATUS );
 
     # Request clamd to reload the virus signatures
-    Foswiki::Func::registerRESTHandler( 'reload', \&reloadSignatures );
+    Foswiki::Func::registerRESTHandler( 'reload', \&_reloadSignatures );
 
     # Request clamd to scan the attachments of a topic
-    Foswiki::Func::registerRESTHandler( 'scan', \&scanAttachments );
+    Foswiki::Func::registerRESTHandler( 'scan', \&_scanAttachments );
 
     # Plugin correctly initialized
     return 1;
@@ -61,7 +61,7 @@ sub initPlugin {
 
 =begin TML
 
----++ ClassMethod _CLAMAVSTATUS() -> $string
+---++ StaticMethod _CLAMAVSTATUS() -> $string
 
 Registered Handler: Implements the CLAMAVSTATUS macro. Returns the status string.
 
@@ -105,7 +105,7 @@ sub _CLAMAVSTATUS {
 
 =begin TML
 
----++ ClassMethod beforeUploadHandler()
+---++ StaticMethod beforeUploadHandler()
 
 Intercepts the newly uploaded attachment before it has been stored in Foswiki.
 
@@ -145,7 +145,7 @@ sub beforeUploadHandler {
 
 =begin TML
 
----++ ClassMethod beforeSaveHandler()
+---++ StaticMethod beforeSaveHandler()
 
 Intercepts an upated topic prior to save.
 
@@ -174,7 +174,7 @@ sub beforeSaveHandler {
 
 =begin TML
 
----++ ClassMethod reloadSignatures($session) -> $text
+---++ StaticMethod  reloadSignatures($session) -> $text
 
 Implements the rest handler "reload"
 
@@ -183,7 +183,7 @@ This function is only available to administrators.
 
 =cut
 
-sub reloadSignatures {
+sub _reloadSignatures {
     my ( $session, $subject, $verb, $response ) = @_;
 
     return "Not authorized" unless Foswiki::Func::isAnAdmin();
@@ -200,21 +200,48 @@ sub reloadSignatures {
 
 =begin TML
 
----++ ClassMethod scanAttachments($session) -> $text
+---++ StaticMethod scanAttachments($session) -> $text
 
 Implements the rest handler "scan"
 
-Performs a virus scan of all attachment for a topic.
+Performs a virus scan of all attachment for a topic.  This includes the rcs ",v"
+files.  It's important to scan data stored in the prior revisions of a file.
+
 This function is only available to administrators.
 
 =cut
 
-sub scanAttachments {
-    my ( $session, $subject, $verb, $response ) = @_;
-
+sub _scanAttachments {
+    my $session = shift;
     return "Not authorized" unless Foswiki::Func::isAnAdmin();
-    return "SCAN initiated for $subject \n\n";
+
+    my $query   = Foswiki::Func::getCgiQuery();
+    my $resp = '';
+
+    my $nl = ( Foswiki::Func::getContext()->{'command_line'} ) ?  "\n" : '<br />';
+
+    my $topic = $query->param('topic');
+    my $web;
+    ( $web, $topic ) = Foswiki::Func::normalizeWebTopicName( undef, $topic );
+
+    my $dir  = "$Foswiki::cfg{PubDir}/$web/$topic";
+    my $dh;
+    opendir( $dh, $dir ) || return "No attachment directory found for $topic $nl";
+
+    my $av =
+      new Foswiki::Plugins::ClamAVScanPlugin::ClamAV( port => "$clamdPort", find_all => 1, forceScan => 1);
+
+    foreach my $fn ( grep { -f "$dir/$_"}readdir($dh) ) {
+        my @results = $av->scan( "$dir/$fn" );
+
+        foreach my $x ( @results) {
+            $resp .=  "@$x[0] - @$x[1] - @$x[2] $nl";
+        }
+    }
+    closedir($dh);
+    return $resp . $nl;
 }
+
 1;
 
 __END__

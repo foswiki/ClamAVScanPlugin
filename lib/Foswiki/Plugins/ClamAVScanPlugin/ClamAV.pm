@@ -6,6 +6,13 @@ use File::Find qw(find);
 use IO::Socket;
 #use Socket::PassAccessRights;   # included by "eval" in scan subroutine
 
+=begin TML
+---++ ClassMethod new()
+
+Create a new ClamAV Connection object.
+
+=cut
+
 sub new {
     my $this = shift;
     my (%options) = @_;
@@ -14,7 +21,7 @@ sub new {
 }
 
 =begin TML
----++ Version
+---++ ObjectMethod Version -> $string
 
 Return the clamd and database version information.
 
@@ -39,7 +46,7 @@ sub version {
 }
 
 =begin TML
----++ Ping
+---++ ObjectMethod Ping -> $string
 
 Pings the clamd to check it is alive. Returns true if it is alive, false if it is dead.
 
@@ -65,7 +72,7 @@ sub ping {
 }
 
 =begin TML
----++ scan($dir_or_file)
+---++ ObjectMethod scan($dir_or_file) -> @array
 
 Scan a directory or a file.
 
@@ -97,7 +104,7 @@ sub scan {
 
 =begin TML
 
----++ scan_stream($stream);
+---++ ObjectMethod scan_stream($stream);
 
 Preform a scan on a stream of data for viruses with the ClamAV clamd module.
 
@@ -143,7 +150,7 @@ sub scan_stream {
 
 =begin TML
 
----++ scan_string($text);
+---++ ObjectMethod scan_string($text);
 
 Preform a scan on a string using the ClamAV clamd module.
 
@@ -181,7 +188,7 @@ sub scan_string {
 
 =begin TML
 
----++ reload();
+---++ ObjectMethod reload();
 
 Cause ClamAV clamd service to reload its virus database.
 
@@ -200,7 +207,7 @@ sub reload {
 
 =begin TML
 
----++ ClassMethod errstr($err) -> $string;
+---++ ObjectMethod errstr($err) -> $string;
 
 If called with a value, sets the error string and returns false, otherwise returns the error string.
 
@@ -219,7 +226,7 @@ sub errstr {
 
 =begin TML
 
----++ ClassMethod _scan();
+---++ ObjectMethod _scan();
 
 Internal function to scan a file or directory of files.
 
@@ -266,7 +273,7 @@ sub _scan {
 
 =begin TML
 
----++ ClassMethod _scan_shallow();
+---++ ObjectMethod _scan_shallow();
 
 Internal function to scan files, stopping on the first occurrence.
 
