@@ -25,6 +25,7 @@ our $SHORTDESCRIPTION  = 'Scans attachments for viruses during upload';
 our $NO_PREFS_IN_TOPIC = 1;
 
 my $clamdPort;              # Unix socket used to communicate with clamd daemon
+my $cli = 0;                # Set to 1 if running in CLI environment
 
 =begin TML
 
@@ -54,6 +55,8 @@ sub initPlugin {
 
     # Request clamd to scan the attachments of a topic
     Foswiki::Func::registerRESTHandler( 'scan', \&_scanAttachments );
+
+    $cli = 1 if ( Foswiki::Func::getContext()->{'command_line'} );
 
     # Plugin correctly initialized
     return 1;
@@ -186,16 +189,16 @@ This function is only available to administrators.
 sub _reloadSignatures {
     my ( $session, $subject, $verb, $response ) = @_;
 
-    return "Not authorized" unless Foswiki::Func::isAnAdmin();
+    return _notAuth($session,'reload') unless Foswiki::Func::isAnAdmin();
     Foswiki::Func::writeEvent("ClamAV","Signature reload requested.");
     my $av =
       new Foswiki::Plugins::ClamAVScanPlugin::ClamAV( port => "$clamdPort" );
     unless ( $av->ping ) {
-        return "clamd not available: " . $av->errstr();
+        return _notActive($session,'reload','','',$av->errstr());
         }
     $av->reload();
 
-    return "Reload of ClamAV virus signatures requested\n";
+    return _reloadResult($session);
 }
 
 =begin TML
@@ -213,12 +216,11 @@ This function is only available to administrators.
 
 sub _scanAttachments {
     my $session = shift;
-    return "Not authorized" unless Foswiki::Func::isAnAdmin();
+
+    return _notAuth($session,'scan') unless ( Foswiki::Func::isAnAdmin() );
 
     my $query   = Foswiki::Func::getCgiQuery();
     my $resp = '';
-
-    my $nl = ( Foswiki::Func::getContext()->{'command_line'} ) ?  "\n" : '<br />';
 
     my $topic = $query->param('topic');
     my $web;
@@ -226,22 +228,112 @@ sub _scanAttachments {
 
     my $dir  = "$Foswiki::cfg{PubDir}/$web/$topic";
     my $dh;
-    opendir( $dh, $dir ) || return "No attachment directory found for $topic $nl";
+    opendir( $dh, $dir ) || return _noAttach($session,$web,$topic);
 
     my $av =
       new Foswiki::Plugins::ClamAVScanPlugin::ClamAV( port => "$clamdPort", find_all => 1, forceScan => 1);
 
+    return _notActive($session,'scan',$web,$topic) unless ( $av->ping );
+
     foreach my $fn ( grep { -f "$dir/$_"}readdir($dh) ) {
         my @results = $av->scan( "$dir/$fn" );
-
         foreach my $x ( @results) {
-            $resp .=  "@$x[0] - @$x[1] - @$x[2] $nl";
+            if (@$x[2] eq 'FOUND') {
+                Foswiki::Func::writeEvent("ClamAV","@$x[1] detected in attachment @$x[0] during scan.");
+                $resp .=  "@$x[0] - @$x[1] - @$x[2] \n";
+            }
         }
     }
+
     closedir($dh);
-    return $resp . $nl;
+    Foswiki::Func::writeEvent("ClamAV","Scan reported everything clean.");
+    return _scanResult($session,$web,$topic,$resp);
+
 }
 
+sub _notAuth {
+    my $session = shift;
+    if ( $cli ) {
+        Foswiki::Func::loadTemplate('oopsclamav'.$_[0]);
+        my $tml = Foswiki::Func::expandTemplate('clamav_notauth');
+        return _expand($session,$tml);
+    }
+    else {
+        throw Foswiki::OopsException(
+            'clamav'.$_[0],
+            def    => 'clamav_notauth',
+        );
+    }
+}
+
+sub _noAttach {
+    my $session = shift;
+    if ( $cli ) {
+        Foswiki::Func::loadTemplate('oopsclamavscan');
+        my $tml = Foswiki::Func::expandTemplate('"clamav_nodir" PARAM1="'."$_[0].$_[1]".'"');
+        return _expand($session,$tml);
+    }
+    else {
+       throw Foswiki::OopsException(
+           'clamavscan',
+           def    => 'clamav_nodir',
+           params => ["$_[0].$_[1]"] );
+    }
+}
+
+sub _notActive {
+    my $session = shift;
+    if ( $cli ) {
+        Foswiki::Func::loadTemplate('oopsclamav'.$_[0]);
+        my $tml = Foswiki::Func::expandTemplate('clamav_offline');
+        return _expand($session,$tml);
+    }
+    else {
+       throw Foswiki::OopsException(
+           'clamav'.$_[0],
+           def    => 'clamav_offline',
+           );
+    }
+}
+
+sub _scanResult {
+    my $session = shift;
+    my $msg = ( $_[2] ) ? 'scan' : 'none';
+    if ($cli ) {
+        Foswiki::Func::loadTemplate('oopsclamavscan');
+        my $tml = Foswiki::Func::expandTemplate('"clamav_'.$msg.'" PARAM1="'."$_[0].$_[1]".'" PARAM2="'.$_[2].'"');
+        return _expand($session,$tml);
+        }
+    else {
+       throw Foswiki::OopsException(
+           'clamavscan',
+           def    => 'clamav_'.$msg,
+           params => ["$_[0].$_[1]","$_[2]"] );
+       }
+}
+
+sub _reloadResult {
+    my $session = shift;
+    if ($cli ) {
+        Foswiki::Func::loadTemplate('oopsclamavreload');
+        my $tml = Foswiki::Func::expandTemplate('clamav_reload');
+        return _expand($session,$tml);
+        }
+    else {
+       throw Foswiki::OopsException(
+           'clamavreload',
+           def    => 'clamav_reload',
+            );
+       }
+}
+
+sub _expand {
+    my $session = shift;
+    my $tml = shift;
+    $tml = Foswiki::Func::expandCommonVariables("$tml");
+    $tml = $session->renderer->TML2PlainText($tml);
+    return "\n$tml\n\n";
+}
 1;
 
 __END__

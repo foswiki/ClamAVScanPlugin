@@ -1,0 +1,28 @@
+%{ Used to report threats detected by ClamAV }%
+%TMPL:INCLUDE{"oops"}%
+
+%TMPL:DEF{"titleaction"}%%MAKETEXT{"(<nop>ClamAV AntiVirus Error)"}% %TMPL:END%
+
+%TMPL:DEF{"webaction"}% *%MAKETEXT{"Attention"}%* %TMPL:END%
+
+%TMPL:DEF{"heading"}%%MAKETEXT{"Results from scan of existing attachments"}%%TMPL:END%
+
+%TMPL:DEF{"topicactionbuttons"}% [[%WEB%.%TOPIC%][%MAKETEXT{"OK"}%]] %TMPL:END%
+%TMPL:DEF{"clamav_offline"}%<span class="foswikiAlert">%X% *%MAKETEXT{"Error:"}%* %MAKETEXT{"The !ClamAV !AntiVirus engine appears to be offline."}%</span>%TMPL:END%
+%TMPL:DEF{"clamav_notauth"}%<span class="foswikiAlert">%X% *%MAKETEXT{"Error:"}%* %MAKETEXT{"The !ClamAVScanPlugin is restricted to administrators."}%</span>%TMPL:END%
+%TMPL:DEF{"clamav_notfound"}%<span class="foswikiAlert">%X% *%MAKETEXT{"Error"}%* %MAKETEXT{"Requested topic [_1] not found" args="<nop>%PARAM1%"}%%TMPL:END%
+%TMPL:DEF{"clamav_nodir"}%%MAKETEXT{"No attachment directory was found for [_1]" args="%PARAM1%"}%%TMPL:END%
+%TMPL:DEF{"clamav_none"}%%MAKETEXT{"All attachments scanned.  No threats found." }%%TMPL:END%
+%TMPL:DEF{"clamav_scan"}%%MAKETEXT{"Attachments and their rcs history should be manually removed from the file system!"}%
+%MAKETEXT{"The following threats were detected:"}%
+<verbatim>
+%PARAM2%
+</verbatim>
+%TMPL:END% 
+
+%TMPL:DEF{"message"}%
+%INSTANTIATE%
+%TMPL:END%
+
+
+%TMPL:END%
