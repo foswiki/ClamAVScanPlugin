@@ -165,6 +165,8 @@ sub beforeSaveHandler {
     my $av =
       new Foswiki::Plugins::ClamAVScanPlugin::ClamAV( port => "$clamdPort" );
 
+    return unless ( $av->ping );
+
     my ( $ok, $virus ) = $av->scan_string($text);
 
     if ( $ok eq 'FOUND' ) {
