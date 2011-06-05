@@ -45,12 +45,9 @@ failure messages if unable to connect to the clamd socket.
 
 ---+++ Scanning existing attachments.
 
-The current attachments and attachment rcs files can be scanned using a rest handler.
-Each attachment and corresponding rcs file if it exists is passed to clamd for
-scanning.  Results of the scan are reported back in the rest results.
+The current attachments and attachment rcs files of an existing topic can be scanned using a rest handler.  Each attachment and corresponding rcs file if it exists is passed to clamd for scanning.  Results of the scan are reported back in the rest results.
 
-All attachments and the corresponding rcs =,v= files are scanned.  There is no facility to request scan of an
-individual attachment.
+All attachments and the corresponding rcs =,v= files of a topic are scanned.  There is no facility to request scan of an individual attachment.
 
 This operation is restricted to users in the Admin group
 ---++++ Web interface:
@@ -66,26 +63,20 @@ This operation is restricted to users in the Admin group
 
 ---+++ Reloading the Virus Signatures.
 
-This plugin includes a rest handler to force reload of the virus signatures.
-This operation is restricted to users in the Admin group.   The plugin sends a
-command to the clamd daemon to request the reload. 
+This plugin includes a rest handler to force reload of the virus signatures.  This operation is restricted to users in the Admin group.   The plugin sends a command to the clamd daemon to request the reload.
 
-Note that reloading the signatures does not download newer signatures from
-!ClamAV.  It only reloads the existing signature files into the clamd daemon.
+Note that reloading the signatures does not download newer signatures from !ClamAV.  It only reloads the existing signature files into the clamd daemon.
 
 [[%SCRIPTURL{rest}%/ClamAVScanPlugin/reload][Reload Signatures]]
 
 ---++ Preferences
 
-This plugin does not use any preferences.  All configuration is done using
-[[%SCRIPTURL{"configure"}%][%ICON{"wrench"}% configure]]
+This plugin does not use any preferences.  All configuration is done using [[%SCRIPTURL{"configure"}%][%ICON{"wrench"}% configure]]
 
 ---++ Installation
 %$INSTALL_INSTRUCTIONS%
 
-%X% *Note:* This plugin depends upon a properly configured and operational
-version of the =clamd= daemon.  Actual scans are executed by the clamd daemon.
-!ClamAV must be local to the Foswiki system.
+%X% *Note:* This plugin depends upon a properly configured and operational version of the =clamd= daemon.  Actual scans are executed by the clamd daemon.  !ClamAV must be local to the Foswiki system.
 
 ---++ Configuration
 
@@ -108,11 +99,11 @@ This plugin uses the following settings:
 
 |  Author: | GeorgeClark |
 |  Copyright: | &copy; 2011, George Clark, Foswiki Contributors %BR%%BR%Module =Foswiki::Plugins::ClamAVScanPlugin::ClamAV= is based upon the CPAN module =File::Scan::ClamAV= %BR%Copyright   Colin Faber <cfaber@fpsn.net> All Rights Reserved.%BR%Originally based on the Clamd module authored by Matt Sergeant. |
-|  License: | GPL ([[http://www.gnu.org/copyleft/gpl.html][GNU General Public License]]) |
+|  License: | GPL ([[http://www.gnu.org/copyleft/gpl.html][GNU General Public License]]).  =Foswiki::Plugins::ClamAVScanPlugin::ClamAV= is licensed under the terms of Perl itself. |
 |  Release: | %$RELEASE% |
 |  Version: | %$VERSION% |
 |  Change&nbsp;History: | <!-- versions below in reverse order -->&nbsp; |
-|  1.0.0 (11 May 2011): | Foswikitask:Item10700 Initial version |
+|  1.0.1 (11 May 2011): | Foswikitask:Item10700 Initial version |
 |  Home: | http://foswiki.org/Extensions/%TOPIC% |
 |  Support: | http://foswiki.org/Support/%TOPIC% |
 
