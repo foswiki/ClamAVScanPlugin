@@ -30,6 +30,26 @@ my $cli = 0;                # Set to 1 if running in CLI environment
 
 =begin TML
 
+---++ StaticMethod earlyInitPlugin() -> $boolean
+
+If running on Foswiki 1.0.x, the beforeUploadHandler doesn't exist.
+Monkey patch the code to become a beforeAttachmentSaveHandler.
+
+=cut
+
+sub earlyInitPlugin {
+
+    return 0 if $Foswiki::Plugins::VERSION >= 2.1;
+
+    no strict "refs";
+    *beforeAttachmentSaveHandler = \&beforeUploadHandler;
+    return 0;
+    use strict "refs";
+
+}
+
+=begin TML
+
 ---++ StaticMethod initPlugin($topic, $web, $user) -> $boolean
 
 =cut
@@ -113,6 +133,9 @@ sub _CLAMAVSTATUS {
 
 Intercepts the newly uploaded attachment before it has been stored in Foswiki.
 
+Note, this handler will be aliased and called as a beforeAttachmentSaveHandler on
+Foswiki versions older than 1.1.
+
 Passes the stream to clamd for scanning.  Throws an exception under two conditions:
    * clamd daemon is not available, and mandatoryScan requested
    * clamd reported a threat in the file.
@@ -120,28 +143,61 @@ Passes the stream to clamd for scanning.  Throws an exception under two conditio
 =cut
 
 sub beforeUploadHandler {
-    my ( $attrs, $meta ) = @_;
+    my $attrs = shift;
+
+#   Attributes:
+#   Foswiki 1.0 -  =tmpFilename= - name of a temporary file containing the attachment data
+#   Foswiki 1.1 -  =stream= - an input stream that will deliver the data for the attachment
+
+    my $meta;
+    my $web;
+    my $topic;
+
+    if ( $Foswiki::Plugins::VERSION >= 2.1 ) {
+        $meta  = shift;
+        $topic = $meta->topic();
+        $web   = $meta->web();
+    }
+    else {
+        $topic = shift;
+        $web   = shift;
+    }
 
     my $av =
       new Foswiki::Plugins::ClamAVScanPlugin::ClamAV( port => "$clamdPort" );
+
     unless ( $av->ping ) {
         return unless $Foswiki::cfg{Plugins}{ClamAVScanPlugin}{mandatoryScan};
         throw Foswiki::OopsException(
             'clamavattach',
             def    => 'clamav_offline',
-            params => [ $attrs->{name} ]
+            params => [ $attrs->{attachment} ]
         );
     }
 
-    my ( $ok, $virus ) = $av->scan_stream( $attrs->{stream} );
+    my $ok;
+    my $virus;
+
+    if ( $Foswiki::Plugins::VERSION >= 2.1 ) {
+        ( $ok, $virus ) = $av->scan_stream( $attrs->{stream} );
+    }
+    else {
+	# note:  scan returns an array of results since it can also be passed a directory.
+	# We are scanning an explicit file, so only the first entry matters.
+        my @results = $av->scan( $attrs->{tmpFilename} );
+        $virus = $results[0][1];
+        $ok = $results[0][2];
+    }
 
     if ( $ok eq 'FOUND' ) {
-        Foswiki::Func::writeEvent( "ClamAV",
-            "$virus detected in attachment $attrs->{name} - Upload blocked." );
+        Foswiki::Func::writeWarning( "$virus detected in topic "
+              . $web . '.'
+              . $topic
+              . " attachment $attrs->{attachment} - Upload blocked." );
         throw Foswiki::OopsException(
             'clamavattach',
             def    => 'clamav_upload',
-            params => [ $attrs->{name}, $virus ]
+            params => [ $attrs->{attachment}, $virus ]
         );
     }
 
@@ -172,8 +228,8 @@ sub beforeSaveHandler {
     my ( $ok, $virus ) = $av->scan_string($text);
 
     if ( $ok eq 'FOUND' ) {
-        Foswiki::Func::writeEvent( "ClamAV",
-            "$virus detected in topic text during save - Save blocked." );
+        Foswiki::Func::writeWarning(
+            "$virus detected in $web.$topic text during save - Save blocked.");
         throw Foswiki::OopsException( 'clamavsave', params => [$virus] );
     }
 
@@ -195,7 +251,7 @@ sub _reloadSignatures {
     my ( $session, $subject, $verb, $response ) = @_;
 
     return _notAuth( $session, 'reload' ) unless Foswiki::Func::isAnAdmin();
-    Foswiki::Func::writeEvent( "ClamAV", "Signature reload requested." );
+    Foswiki::Func::writeWarning("Signature reload requested.");
     my $av =
       new Foswiki::Plugins::ClamAVScanPlugin::ClamAV( port => "$clamdPort" );
     unless ( $av->ping ) {
@@ -247,15 +303,15 @@ sub _scanAttachments {
         my @results = $av->scan("$dir/$fn");
         foreach my $x (@results) {
             if ( @$x[2] eq 'FOUND' ) {
-                Foswiki::Func::writeEvent( "ClamAV",
-                    "@$x[1] detected in attachment @$x[0] during scan." );
+                Foswiki::Func::writeWarning(
+"$web.$topic: @$x[1] detected in attachment @$x[0] during scan."
+                );
                 $resp .= "@$x[0] - @$x[1] - @$x[2] \n";
             }
         }
     }
 
     closedir($dh);
-    Foswiki::Func::writeEvent( "ClamAV", "Scan reported everything clean." );
     return _scanResult( $session, $web, $topic, $resp );
 
 }
