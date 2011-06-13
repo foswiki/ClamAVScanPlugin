@@ -182,16 +182,17 @@ sub beforeUploadHandler {
         ( $ok, $virus ) = $av->scan_stream( $attrs->{stream} );
     }
     else {
-	# note:  scan returns an array of results since it can also be passed a directory.
-	# We are scanning an explicit file, so only the first entry matters.
+
+# note:  scan returns an array of results since it can also be passed a directory.
+# We are scanning an explicit file, so only the first entry matters.
         my @results = $av->scan( $attrs->{tmpFilename} );
         $virus = $results[0][1];
-        $ok = $results[0][2];
+        $ok    = $results[0][2];
     }
 
     if ( $ok eq 'FOUND' ) {
-        Foswiki::Func::writeWarning( "$virus detected in topic "
-              . $web . '.'
+        Foswiki::Func::writeWarning( "$virus detected in topic " 
+              . $web . '.' 
               . $topic
               . " attachment $attrs->{attachment} - Upload blocked." );
         throw Foswiki::OopsException(
@@ -365,7 +366,7 @@ sub _scanResult {
     if ($cli) {
         Foswiki::Func::loadTemplate('oopsclamavscan');
         my $tml =
-          Foswiki::Func::expandTemplate( '"clamav_'
+          Foswiki::Func::expandTemplate( '"clamav_' 
               . $msg
               . '" PARAM1="'
               . "$_[0].$_[1]"

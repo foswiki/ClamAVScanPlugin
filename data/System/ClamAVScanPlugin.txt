@@ -106,6 +106,13 @@ This plugin uses the following settings:
 *Caution:* In addition to these settings, the =clamd.conf= setting =StreamMaxLength= needs to be large enough to accommodate the largest Foswiki setting for ATTACHFILESIZELIMIT.  Currently %ATTACHFILESIZELIMIT% in this web, this value can be set per web.
 </div>
 
+---+++ Dependencies
+
+%$DEPENDENCIES%
+
+*Note:* %X% =Socket::PassAccessRights= is "optional" however on most systems this module will be required for correct operation.   The =clamd= daemon must have full access to each scanned file.  This module allows a file descriptor to be passed to clamd ensuring full access.   If this module is not installed, the file _name_ will be passed to the clamd daemon.  If insufficient rights are available, the scan will fail.
+(On Foswiki 1.1, scans during attachment upload will still work, as the stream is passed to clamd.  On Foswiki 1.0, the temporary file name will be passed resulting in possible access rights issues.)
+
 ---++ Info
 
 |  Author: | GeorgeClark |
