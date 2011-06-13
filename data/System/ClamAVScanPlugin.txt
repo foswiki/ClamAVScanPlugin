@@ -1,10 +1,12 @@
+%META:TOPICINFO{author="BaseUserMapping_333" comment="" date="1307976033" format="1.1" version="2"}%
 %META:TOPICPARENT{name="Plugins"}%
 <!--
 One line description, required for extensions repository catalog.
    * Set SHORTDESCRIPTION = Scans attachments for viruses during upload using <nop>ClamAV
 -->
-<div style="float:right">
-<img src="%ATTACHURLPATH%/ClamAVScanLogo.png" alt="ClamAV Scan Plugin Logo" title="ClamAVScanPlugin Logo" /> 
+
+<div style="float: right;">
+<img alt="ClamAV Scan Plugin Logo" src="%ATTACHURLPATH%/ClamAVScanLogo.png" title="ClamAVScanPlugin Logo" />
 </div>
 
 ---+!! <nop>ClamAV Scan Plugin
@@ -18,7 +20,8 @@ only saved if the virus scan does not detect any threats.
 From the description of !ClamAV at http://www.clamav.net
 
 <noautolink>
-<blockquote class="foswikiHelp">
+
+<blockquote>
 ClamAV is an open source (GPL) antivirus engine designed for detecting
 Trojans, viruses, malware and other malicious threats. It is the de facto
 standard for mail gateway scanning. It provides a high performance
@@ -28,6 +31,7 @@ ClamAV library provides numerous file format detection mechanisms, file
 unpacking support, archive support, and multiple signature languages for
 detecting threats.
 </blockquote>
+
 </noautolink>
 
 ---++ Usage
@@ -74,6 +78,7 @@ Note that reloading the signatures does not download newer signatures from !Clam
 This plugin does not use any preferences.  All configuration is done using [[%SCRIPTURL{"configure"}%][%ICON{"wrench"}% configure]]
 
 ---++ Installation
+
 %$INSTALL_INSTRUCTIONS%
 
 %X% *Note:* This plugin depends upon a properly configured and operational version of the =clamd= daemon.  Actual scans are executed by the clamd daemon.  !ClamAV must be local to the Foswiki system.
@@ -81,15 +86,21 @@ This plugin does not use any preferences.  All configuration is done using [[%SC
 ---++ Configuration
 
 This plugin uses the following settings:
+
+<sticky>
 <!--
+   * #SMELL:   This is set to HTML entities to prevent recursive regex errors
+   * in definition list processing.  Setting to :: causes recursion in the
+   * render regex.
+
    * Set CC = &#58;&#58;
--->
+--></sticky>
 
-   $ ==$Foswiki%CC%cfg{Plugins}{ClamAVScanPlugin}{clamdPort}==: The unix socket used to communicate with the =clamd= daemon.  Defaults to =/tmp/clamd=
+   $ ==$Foswiki%CC%cfg{Plugins}{ClamAVScanPlugin}{clamdPort}==: The unix socket used to communicate with the =clamd= daemon. Defaults to =/tmp/clamd=
 
-   $ ==$Foswiki%CC%cfg{Plugins}{ClamAVScanPlugin}{mandatoryScan}==: Should attach be blocked if clamd is unavailable to scan attachments. If this option is enabled, any attempt to attach a file will result in an  error when clamd is not available.  Default is disabled - Attachments will be added without scanning if =clamd= is unavailable.
+   $ ==$Foswiki%CC%cfg{Plugins}{ClamAVScanPlugin}{mandatoryScan}==: Should attach be blocked if clamd is unavailable to scan attachments. If this option is enabled, any attempt to attach a file will result in an error when clamd is not available. Default is disabled - Attachments will be added without scanning if =clamd= is unavailable.
 
-   $ ==$Foswiki%CC%cfg{Plugins}{ClamAVScanPlugin}{scanTopics}==: !ClamAV can perform HTML scanning for certain embedded script threats.  It can also perform "Data Loss Prevention".  When DLP is enabled in clamd.conf, it will detect certain data such as social security numbers and credit card numbers in content.  Default is disabled.  Enable this option to perform scanning of topic data for structured data and embedded HTML threats.  If a threat is detected, !ClamAV will block the topic save.
+   $ ==$Foswiki%CC%cfg{Plugins}{ClamAVScanPlugin}{scanTopics}==: !ClamAV can perform HTML scanning for certain embedded script threats. It can also perform "Data Loss Prevention". When DLP is enabled in clamd.conf, it will detect certain data such as social security numbers and credit card numbers in content. Default is disabled. Enable this option to perform scanning of topic data for structured data and embedded HTML threats. If a threat is detected, !ClamAV will block the topic save.
 
 <div class="foswikiAlert">
 *Caution:* In addition to these settings, the =clamd.conf= setting =StreamMaxLength= needs to be large enough to accommodate the largest Foswiki setting for ATTACHFILESIZELIMIT.  Currently %ATTACHFILESIZELIMIT% in this web, this value can be set per web.
@@ -98,12 +109,14 @@ This plugin uses the following settings:
 ---++ Info
 
 |  Author: | GeorgeClark |
-|  Copyright: | &copy; 2011, George Clark, Foswiki Contributors %BR%%BR%Module =Foswiki::Plugins::ClamAVScanPlugin::ClamAV= is based upon the CPAN module =File::Scan::ClamAV= %BR%Copyright   Colin Faber <cfaber@fpsn.net> All Rights Reserved.%BR%Originally based on the Clamd module authored by Matt Sergeant. |
-|  License: | GPL ([[http://www.gnu.org/copyleft/gpl.html][GNU General Public License]]).  =Foswiki::Plugins::ClamAVScanPlugin::ClamAV= is licensed under the terms of Perl itself. |
+|  Copyright: | © 2011, George Clark, Foswiki Contributors %BR%%BR%Module =Foswiki::Plugins::ClamAVScanPlugin::ClamAV= is based upon the CPAN module =File::Scan::ClamAV= %BR%Copyright Colin Faber All Rights Reserved.%BR%Originally based on the Clamd module authored by Matt Sergeant. |
+|  License: | GPL ([[http://www.gnu.org/copyleft/gpl.html][GNU General Public License]]). =Foswiki::Plugins::ClamAVScanPlugin::ClamAV= is licensed under the terms of Perl itself. |
 |  Release: | %$RELEASE% |
 |  Version: | %$VERSION% |
-|  Change&nbsp;History: | <!-- versions below in reverse order -->&nbsp; |
-|  1.0.1 (11 May 2011): | Foswikitask:Item10700 Initial version |
+|  Change History: | <!-- versions below in reverse order --> |
+|  1.1.0 (13 June 2011) | Foswikitask:Item10835 Add backwards compatibility with Foswiki 1.0 |
+|  1.0.1 (11 May 2011) | Foswikitask:Item10700 Initial version |
 |  Home: | http://foswiki.org/Extensions/%TOPIC% |
 |  Support: | http://foswiki.org/Support/%TOPIC% |
 
+%META:FILEATTACHMENT{name="ClamAVScanLogo.png" attr="h" comment="" date="1307416260" path="ClamAVScanLogo.png" size="51043" user="ProjectContributor" version="1"}%

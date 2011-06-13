@@ -21,7 +21,7 @@ use Foswiki::Plugins::ClamAVScanPlugin::ClamAV;
 use Foswiki::OopsException;
 
 our $VERSION           = '$Rev$';
-our $RELEASE           = '1.0.1';
+our $RELEASE           = '1.1.0';
 our $SHORTDESCRIPTION  = 'Scans attachments for viruses during upload';
 our $NO_PREFS_IN_TOPIC = 1;
 
