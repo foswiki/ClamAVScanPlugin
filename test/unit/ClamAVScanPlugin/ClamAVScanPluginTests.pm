@@ -76,12 +76,12 @@ FL
 sub tear_down {
     my $this = shift;
     unlink $testfile;
-    rmtree($this->{tempdir});
+    rmtree( $this->{tempdir} );
     $this->SUPER::tear_down();
 }
 
 sub test_ClamAV_ping {
-    my $this = shift;
+    my $this      = shift;
     my $clamdPort = $Foswiki::cfg{Plugins}{ClamAVScanPlugin}{clamdPort}
       || '/tmp/clamd';
 
@@ -92,16 +92,18 @@ sub test_ClamAV_ping {
 
     $this->assert( $av->ping );
 
-    $av =
-      new Foswiki::Plugins::ClamAVScanPlugin::ClamAV( port => "xxx" );
+    $av = new Foswiki::Plugins::ClamAVScanPlugin::ClamAV( port => "xxx" );
 
     $this->assert_null( $av->errstr() );
     $this->assert( !$av->ping );
-    $this->assert_equals( "Cannot connect to unix socket 'xxx': connect: No such file or directory", $av->errstr());
+    $this->assert_equals(
+"Cannot connect to unix socket 'xxx': connect: No such file or directory",
+        $av->errstr()
+    );
 }
 
 sub test_ClamAV_version {
-    my $this = shift;
+    my $this      = shift;
     my $clamdPort = $Foswiki::cfg{Plugins}{ClamAVScanPlugin}{clamdPort}
       || '/tmp/clamd';
 
@@ -119,7 +121,8 @@ sub test_ClamAV_scan_string {
     my $av =
       new Foswiki::Plugins::ClamAVScanPlugin::ClamAV( port => "$clamdPort" );
 
-    my $text = "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+    my $text =
+"Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
     my ( $ok, $virus ) = $av->scan_string($text);
     $this->assert_equals( 'OK', $ok );
 
@@ -142,7 +145,7 @@ ASDF
 
     ( $ok, $virus ) = $av->scan_string($text);
 
-    $this->assert_equals( 'FOUND', $ok );
+    $this->assert_equals( 'FOUND',                                  $ok );
     $this->assert_equals( 'Heuristics.Structured.CreditCardNumber', $virus );
 }
 
@@ -154,7 +157,7 @@ sub test_ClamAV_scan_stream {
     my $av =
       new Foswiki::Plugins::ClamAVScanPlugin::ClamAV( port => "$clamdPort" );
 
-    open ( my $st, '<', $testfile );
+    open( my $st, '<', $testfile );
 
     my ( $ok, $virus ) = $av->scan_stream($st);
     $this->assert_equals( 'OK', $ok );
@@ -166,19 +169,22 @@ sub test_ClamAV_scan_file_or_dir {
 
     my $clamdPort = $Foswiki::cfg{Plugins}{ClamAVScanPlugin}{clamdPort}
       || '/tmp/clamd';
-    my $av =
-      new Foswiki::Plugins::ClamAVScanPlugin::ClamAV( port => "$clamdPort", find_all => 1, forceScan => 0);
+    my $av = new Foswiki::Plugins::ClamAVScanPlugin::ClamAV(
+        port      => "$clamdPort",
+        find_all  => 1,
+        forceScan => 0
+    );
 
-    chmod (0777, $testfile);
-    my @results = $av->scan( "$testfile" );
+    chmod( 0777, $testfile );
+    my @results = $av->scan("$testfile");
 
-    foreach my $x ( @results) {
+    foreach my $x (@results) {
         print STDERR "1-Results @$x[0] - @$x[1] - @$x[2] \n";
     }
 
-    @results = $av->scan( "$this->{tempdir}" );
+    @results = $av->scan("$this->{tempdir}");
 
-    foreach my $x ( @results) {
+    foreach my $x (@results) {
         print STDERR "2-Results @$x[0] - @$x[1] - @$x[2] \n";
     }
 
