@@ -308,10 +308,10 @@ sub _readdir {
 
     if ($Foswiki::UNICODE) {
         map { NFC( Encode::decode_utf8($_) ) } readdir( $_[0] );
-   }
-   else {
-        readdir( $_[0]);
-   }
+    }
+    else {
+        readdir( $_[0] );
+    }
 }
 
 sub _scanAttachments {
@@ -326,10 +326,18 @@ sub _scanAttachments {
     my $scanTopic = $query->param('scan') || $query->param('topic');
     ( my $scanWeb, $scanTopic ) =
       Foswiki::Func::normalizeWebTopicName( undef, $scanTopic );
+    $scanWeb = Foswiki::Sandbox::untaint( $scanWeb,
+        \&Foswiki::Sandbox::validateWebName );
+    $scanTopic = Foswiki::Sandbox::untaint( $scanTopic,
+        \&Foswiki::Sandbox::validateTopicName );
 
     my ( $web, $topic ) =
       Foswiki::Func::normalizeWebTopicName( undef,
         scalar $query->param('redirectto') );
+    $web =
+      Foswiki::Sandbox::untaint( $web, \&Foswiki::Sandbox::validateWebName );
+    $topic = Foswiki::Sandbox::untaint( $topic,
+        \&Foswiki::Sandbox::validateTopicName );
 
     my $dir = "$Foswiki::cfg{PubDir}/$scanWeb/$scanTopic";
     my $dh;
