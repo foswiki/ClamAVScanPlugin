@@ -1,8 +1,8 @@
 !noci
 data/System/ClamAVScanPlugin.txt 0664
 data/System/VarCLAMAVSTATUS.txt 0664
-lib/Foswiki/Configure/Checkers/ClamAVScanPlugin/Enabled.pm 0664
-lib/Foswiki/Configure/Checkers/ClamAVScanPlugin/clamdPort.pm 0664
+lib/Foswiki/Configure/Checkers/Plugins/ClamAVScanPlugin/Enabled.pm 0664
+lib/Foswiki/Configure/Checkers/Plugins/ClamAVScanPlugin/clamdPort.pm 0664
 lib/Foswiki/Plugins/ClamAVScanPlugin.pm 0664
 lib/Foswiki/Plugins/ClamAVScanPlugin/ClamAV.pm 0664
 lib/Foswiki/Plugins/ClamAVScanPlugin/Config.spec 0664
