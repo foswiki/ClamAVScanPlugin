@@ -6,6 +6,9 @@ use warnings;
 use File::Find qw(find);
 use IO::Socket;
 use Foswiki::OopsException;
+use Encode;
+
+use constant TRACE => 0;
 
 #use Socket::PassAccessRights;   # included by "eval" in scan subroutine.  If not available, scanning might fail due to file access rights
 
@@ -36,6 +39,7 @@ sub version {
     my $results  = '';
     my $response = '';
 
+    Foswiki::Func::writeDebug("Sending zVERSION") if TRACE;
     $this->_send( $conn, "zVERSION\x00" );
 
     for my $result ( $conn->getline ) {
@@ -59,6 +63,7 @@ sub ping {
     my ($this) = @_;
     my $conn = $this->_getConnection || return;
 
+    Foswiki::Func::writeDebug("Sending zPING") if TRACE;
     $this->_send( $conn, "zPING\x00" );
     chop( my $response = $conn->getline );
 
@@ -129,6 +134,7 @@ sub scan_stream {
         def    => 'clamav_fail',
         params => [ "clamd connection not available  - " . $this->errstr() ]
       );
+    Foswiki::Func::writeDebug("Sending zINSTREAM ...") if TRACE;
     $this->_send( $conn, "zINSTREAM\x00" );
 
     my @return;
@@ -146,9 +152,10 @@ sub scan_stream {
         }
 
         my $out = pack( 'N', ($r) ) . $transfer;
-        $this->_send( $conn, $out );
+        $this->_sendStream( $conn, $out );
     }
-    $this->_send( $conn, pack( 'N', (0) ) );
+    $this->_sendStream( $conn, pack( 'N', (0) ) );
+    Foswiki::Func::writeDebug(" ... transfer complete.") if TRACE;
 
     chomp( my $r = $conn->getline );
     $conn->close;
@@ -185,14 +192,16 @@ sub scan_string {
         def    => 'clamav_fail',
         params => [ "clamd connection not available - " . $this->errstr() ]
       );
+    Foswiki::Func::writeDebug("Sending INSTREAM: scan_string") if TRACE;
     $this->_send( $conn, "zINSTREAM\x00" );
 
     my @return;
 
     my $out = pack( 'N', ( length $st ) ) . $st;
-    $this->_send( $conn, $out );
+    $this->_sendStream( $conn, $out );
 
-    $this->_send( $conn, pack( 'N', (0) ) );    # Mark end of stream.
+    $this->_sendStream( $conn, pack( 'N', (0) ) );    # Mark end of stream.
+    Foswiki::Func::writeDebug(" ... transfer complete.") if TRACE;
 
     chomp( my $r = $conn->getline );
     $conn->close;
@@ -216,6 +225,7 @@ Cause ClamAV clamd service to reload its virus database.
 sub reload {
     my $this = shift;
     my $conn = $this->_getConnection || return;
+    Foswiki::Func::writeDebug("Sending zRELOAD") if TRACE;
     $this->_send( $conn, "zRELOAD\x00" );
 
     my $response = $conn->getline;
@@ -285,6 +295,7 @@ sub _scan {
     my @results;
 
     for (@files) {
+        Foswiki::Func::writeDebug("scanning $_ using $cmd") if TRACE;
         push @results, $this->_scan_shallow( $cmd, $_, $options );
     }
 
@@ -321,9 +332,11 @@ sub _scan_shallow {
         my $conn = $this->_getConnection || return;
 
         if ( $cmd eq 'SCAN' ) {
+            Foswiki::Func::writeDebug("Sending zSCAN $file") if TRACE;
             $this->_send( $conn, "zSCAN $file\x00" );
         }
         else {
+            Foswiki::Func::writeDebug("Sending zFILEDES for $file") if TRACE;
             $this->_send( $conn, "zFILDES\x00" );
             open( $fd, '<', $file )
               || throw Foswiki::OopsException(
@@ -344,6 +357,7 @@ sub _scan_shallow {
         for my $result ( $conn->getline ) {
             chomp($result);
             $result =~ s/\x00$//g;    # remove null terminator if present;
+            $result = decode_utf8($result) if ( $Foswiki::UNICODE);
             my ( $fn, $msg, $code ) =
               $result =~ m/^(.*?):\s?(.*?)\s?(OK|ERROR|FOUND)$/;
             my $fname = ( $cmd eq 'SCAN' ) ? $fn : $file;
@@ -356,8 +370,15 @@ sub _scan_shallow {
     return @results;
 }
 
+sub _sendStream {
+    my ( $this, $fh, $data ) = @_;
+    return syswrite $fh, $data, length($data);
+}
+
+# Filenames must be utf8 encoded.
 sub _send {
     my ( $this, $fh, $data ) = @_;
+    $data = encode_utf8($data) if ($Foswiki::UNICODE);
     return syswrite $fh, $data, length($data);
 }
 
@@ -405,7 +426,7 @@ Author: George Clark - derived from previous work:
   Originally based on the Clamd module authored by Matt Sergeant.
 
 
-Copyright (C) 2011 Foswiki Contributors. Foswiki Contributors
+Copyright (C) 2011-2016 Foswiki Contributors. Foswiki Contributors
 are listed in the AUTHORS file in the root of this distribution.
 NOTE: Please extend that file, not this notice.
 

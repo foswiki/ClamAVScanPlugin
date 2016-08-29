@@ -19,14 +19,19 @@ use Foswiki::Func    ();    # The plugins API
 use Foswiki::Plugins ();    # For the API version
 use Foswiki::Plugins::ClamAVScanPlugin::ClamAV;
 use Foswiki::OopsException;
+use Unicode::Normalize;
+use Encode;
 
-our $VERSION           = '$Rev$';
-our $RELEASE           = '1.1.0';
-our $SHORTDESCRIPTION  = 'Scans attachments for viruses during upload';
+our $VERSION = '1.2';
+our $RELEASE = '31 Aug 2016';
+our $SHORTDESCRIPTION =
+  'Scans attachments for viruses, malware and other threats during upload';
 our $NO_PREFS_IN_TOPIC = 1;
 
 my $clamdPort;              # Unix socket used to communicate with clamd daemon
 my $cli = 0;                # Set to 1 if running in CLI environment
+
+use constant TRACE => 0;
 
 =begin TML
 
@@ -72,10 +77,22 @@ sub initPlugin {
     Foswiki::Func::registerTagHandler( 'CLAMAVSTATUS', \&_CLAMAVSTATUS );
 
     # Request clamd to reload the virus signatures
-    Foswiki::Func::registerRESTHandler( 'reload', \&_reloadSignatures );
+    Foswiki::Func::registerRESTHandler(
+        'reload', \&_reloadSignatures,
+        authenticate => 1,  # Set to 0 if handler should be useable by WikiGuest
+        validate     => 1,  # Set to 0 to disable StrikeOne CSRF protection
+        http_allow => 'POST', # Set to 'GET,POST' to allow use HTTP GET and POST
+        description => 'Request reload ClamAV Signatures.'
+    );
 
     # Request clamd to scan the attachments of a topic
-    Foswiki::Func::registerRESTHandler( 'scan', \&_scanAttachments );
+    Foswiki::Func::registerRESTHandler(
+        'scan', \&_scanAttachments,
+        authenticate => 1,  # Set to 0 if handler should be useable by WikiGuest
+        validate     => 1,  # Set to 0 to disable StrikeOne CSRF protection
+        http_allow => 'POST', # Set to 'GET,POST' to allow use HTTP GET and POST
+        description => 'Scan attachments for a requested topic'
+    );
 
     $cli = 1 if ( Foswiki::Func::getContext()->{'command_line'} );
 
@@ -191,8 +208,19 @@ sub beforeUploadHandler {
     }
 
     if ( $ok eq 'FOUND' ) {
-        Foswiki::Func::writeWarning( "$virus detected in topic " 
-              . $web . '.' 
+        Foswiki::Func::writeWarning( "$virus detected in topic "
+              . $web . '.'
+              . $topic
+              . " attachment $attrs->{attachment} - Upload blocked." );
+        throw Foswiki::OopsException(
+            'clamavattach',
+            def    => 'clamav_upload',
+            params => [ $attrs->{attachment}, $virus ]
+        );
+    }
+    elsif ( $ok eq 'ERROR' ) {
+        Foswiki::Func::writeWarning( "ERROR detected in scan: $virus"
+              . $web . '.'
               . $topic
               . " attachment $attrs->{attachment} - Upload blocked." );
         throw Foswiki::OopsException(
@@ -276,6 +304,16 @@ This function is only available to administrators.
 
 =cut
 
+sub _readdir {
+
+    if ($Foswiki::UNICODE) {
+        map { NFC( Encode::decode_utf8($_) ) } readdir( $_[0] );
+   }
+   else {
+        readdir( $_[0]);
+   }
+}
+
 sub _scanAttachments {
     my $session = shift;
 
@@ -284,28 +322,42 @@ sub _scanAttachments {
     my $query = Foswiki::Func::getCgiQuery();
     my $resp  = '';
 
-    my $topic = $query->param('topic');
-    my $web;
-    ( $web, $topic ) = Foswiki::Func::normalizeWebTopicName( undef, $topic );
+  # Old versions use "topic" param which collides with the core topic parameter.
+    my $scanTopic = $query->param('scan') || $query->param('topic');
+    ( my $scanWeb, $scanTopic ) =
+      Foswiki::Func::normalizeWebTopicName( undef, $scanTopic );
 
-    my $dir = "$Foswiki::cfg{PubDir}/$web/$topic";
+    my ( $web, $topic ) =
+      Foswiki::Func::normalizeWebTopicName( undef,
+        scalar $query->param('redirectto') );
+
+    my $dir = "$Foswiki::cfg{PubDir}/$scanWeb/$scanTopic";
     my $dh;
-    opendir( $dh, $dir ) || return _noAttach( $session, $web, $topic );
+    opendir( $dh, $dir ) || return _noAttach( $session, $scanWeb, $scanTopic );
 
     my $av = new Foswiki::Plugins::ClamAVScanPlugin::ClamAV(
         port      => "$clamdPort",
         find_all  => 1,
-        forceScan => 1
+        forceScan => $Foswiki::cfg{Plugins}{ClamAVScanPlugin}{forceFilename},
     );
 
     return _notActive( $session, 'scan', $web, $topic ) unless ( $av->ping );
 
-    foreach my $fn ( grep { -f "$dir/$_" } readdir($dh) ) {
+    foreach my $fn ( grep { -f "$dir/$_" } _readdir($dh) ) {
+        Foswiki::Func::writeDebug("Found file to scan:  $fn") if TRACE;
         my @results = $av->scan("$dir/$fn");
         foreach my $x (@results) {
+            Foswiki::Func::writeDebug( Data::Dumper::Dumper( \@results ) )
+              if TRACE;
             if ( @$x[2] eq 'FOUND' ) {
                 Foswiki::Func::writeWarning(
-"$web.$topic: @$x[1] detected in attachment @$x[0] during scan."
+"$scanWeb.$scanTopic: @$x[1] detected in attachment @$x[0] during scan."
+                );
+                $resp .= "@$x[0] - @$x[1] - @$x[2] \n";
+            }
+            elsif ( @$x[2] eq 'ERROR' ) {
+                Foswiki::Func::writeWarning(
+"$scanWeb.$scanTopic ERROR: @$x[1] detected in attachment @$x[0] during scan."
                 );
                 $resp .= "@$x[0] - @$x[1] - @$x[2] \n";
             }
@@ -325,8 +377,8 @@ sub _notAuth {
         return _expand( $session, $tml );
     }
     else {
-        throw Foswiki::OopsException( 'clamav' . $_[0], def => 'clamav_notauth',
-        );
+        throw Foswiki::OopsException( 'clamav' . $_[0],
+            def => 'clamav_notauth', );
     }
 }
 
@@ -355,8 +407,8 @@ sub _notActive {
         return _expand( $session, $tml );
     }
     else {
-        throw Foswiki::OopsException( 'clamav' . $_[0], def => 'clamav_offline',
-        );
+        throw Foswiki::OopsException( 'clamav' . $_[0],
+            def => 'clamav_offline', );
     }
 }
 
@@ -366,7 +418,7 @@ sub _scanResult {
     if ($cli) {
         Foswiki::Func::loadTemplate('oopsclamavscan');
         my $tml =
-          Foswiki::Func::expandTemplate( '"clamav_' 
+          Foswiki::Func::expandTemplate( '"clamav_'
               . $msg
               . '" PARAM1="'
               . "$_[0].$_[1]"
@@ -379,7 +431,9 @@ sub _scanResult {
         throw Foswiki::OopsException(
             'clamavscan',
             def    => 'clamav_' . $msg,
-            params => [ "$_[0].$_[1]", "$_[2]" ]
+            params => [ "$_[0].$_[1]", "$_[2]" ],
+            web    => $_[0],
+            topic  => $_[1],
         );
     }
 }

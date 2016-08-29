@@ -1,4 +1,4 @@
-%META:TOPICINFO{author="BaseUserMapping_333" comment="" date="1307976033" format="1.1" version="2"}%
+%META:TOPICINFO{author="ProjectContributor" comment="" date="1472430582" format="1.1" version="1"}%
 %META:TOPICPARENT{name="Plugins"}%
 <!--
 One line description, required for extensions repository catalog.
@@ -49,20 +49,31 @@ failure messages if unable to connect to the clamd socket.
 
 ---+++ Scanning existing attachments.
 
-The current attachments and attachment rcs files of an existing topic can be scanned using a rest handler.  Each attachment and corresponding rcs file if it exists is passed to clamd for scanning.  Results of the scan are reported back in the rest results.
+The current attachments and attachment rcs =,v= files of an existing topic can be scanned using a rest handler.  Each attachment and corresponding rcs file if it exists is passed to clamd for scanning.  Results of the scan are reported back in the rest results.
+There is no facility to request scan of an individual attachment.  Note that the scan is done by reading the contents of the directory. The attachment API is not used. 
 
-All attachments and the corresponding rcs =,v= files of a topic are scanned.  There is no facility to request scan of an individual attachment.
+The rest handler takes two parameters: 
+| =scan= | The =Web.Topic= name that will be subject of the attachment scan. |
+| =redirectto= | Topic name to return to after the scan using the "OK" link.  (Note that the rest handler always generates an oops response, even when no threats are found. |
 
-This operation is restricted to users in the Admin group
+<div class="foswikiHelp">Note that the extensions does not scan subdirectories of the attachment directory. If Foswiki is configured for the =PlainFileStore=, then attachment history will not be scanned.</div>
+
+This operation is restricted to users in the Admin group.
 ---++++ Web interface:
 
-   * %SCRIPTURL{rest}%/ClamAVScanPlugin/scan?topic=System.PatternSkin
+<dirtyarea>
+<form name="clamscan" action="%SCRIPTURL{rest}%/ClamAVScanPlugin/scan" method="post">
+<input name="scan" class="foswikiInputField" type="text" value="%URLPARAM{"scan"}%" size="40" />
+<input name="redirectto" class="foswikiInputField" type="hidden" value="%BASEWEB%.%BASETOPIC%" />
+<input type="submit" class="foswikiSubmit" value="Scan attachments" />
+</form>
+</dirtyarea>
 
 ---++++ Shell interface
 
 <verbatim>
    cd [Foswiki/bin] directory
-   ./rest /ClamAVScanPlugin/scan -topic System.PatternSkin
+   ./rest /ClamAVScanPlugin/scan -scan System.PatternSkin
 </verbatim>
 
 ---+++ Reloading the Virus Signatures.
@@ -71,7 +82,12 @@ This plugin includes a rest handler to force reload of the virus signatures.  Th
 
 Note that reloading the signatures does not download newer signatures from !ClamAV.  It only reloads the existing signature files into the clamd daemon.
 
-[[%SCRIPTURL{rest}%/ClamAVScanPlugin/reload][Reload Signatures]]
+<dirtyarea>
+<form name="clamreload" action="%SCRIPTURL{rest}%/ClamAVScanPlugin/reload" method="post">
+<input name="redirectto" class="foswikiInputField" type="hidden" value="%BASEWEB%.%BASETOPIC%" />
+<input type="submit" class="foswikiSubmit" value="ReloadSignatures" />
+</form>
+</dirtyarea>
 
 ---++ Preferences
 
@@ -100,8 +116,9 @@ This plugin uses the following settings:
 
    $ ==$Foswiki%CC%cfg{Plugins}{ClamAVScanPlugin}{mandatoryScan}==: Should attach be blocked if clamd is unavailable to scan attachments. If this option is enabled, any attempt to attach a file will result in an error when clamd is not available. Default is disabled - Attachments will be added without scanning if =clamd= is unavailable.
 
-   $ ==$Foswiki%CC%cfg{Plugins}{ClamAVScanPlugin}{scanTopics}==: !ClamAV can perform HTML scanning for certain embedded script threats. It can also perform "Data Loss Prevention". When DLP is enabled in clamd.conf, it will detect certain data such as social security numbers and credit card numbers in content. Default is disabled. Enable this option to perform scanning of topic data for structured data and embedded HTML threats. If a threat is detected, !ClamAV will block the topic save.
+   $ ==$Foswiki%CC%cfg{Plugins}{ClamAVScanPlugin}{scanTopics}==: !ClamAV can perform HTML scanning for certain embedded script threats. It can also perform "Data Loss Prevention". When =StructuredDataDetection= is enabled in clamd.conf, it will detect certain data such as social security numbers and credit card numbers in content. Default is disabled. Enable this option to perform scanning of topic data for structured data and embedded HTML threats. If a threat is detected, !ClamAV will block the topic save.
 
+   $ ==$Foswiki%CC%cfg{Plugins}{ClamAVScanPlugin}{forceFilename}==: !Force scan by Filename instead of passing an open file handle to the backend.
 <div class="foswikiAlert">
 *Caution:* In addition to these settings, the =clamd.conf= setting =StreamMaxLength= needs to be large enough to accommodate the largest Foswiki setting for ATTACHFILESIZELIMIT.  Currently %ATTACHFILESIZELIMIT% in this web, this value can be set per web.
 </div>
@@ -113,17 +130,29 @@ This plugin uses the following settings:
 *Note:* %X% =Socket::PassAccessRights= is "optional" however on most systems this module will be required for correct operation.   The =clamd= daemon must have full access to each scanned file.  This module allows a file descriptor to be passed to clamd ensuring full access.   If this module is not installed, the file _name_ will be passed to the clamd daemon.  If insufficient rights are available, the scan will fail.
 (On Foswiki 1.1, scans during attachment upload will still work, as the stream is passed to clamd.  On Foswiki 1.0, the temporary file name will be passed resulting in possible access rights issues.)
 
+---+++ Debugging
+A =TRACE= constant can be enabled in =lib/Foswiki/Plugins/ClamAVScanPlugin.pm= and =lib/Foswiki/Plugins/ClamAVScanPlugin/ClamAV.pm= for detailed debug logging.
+
+If ClamAV is reporting that it is unable to read the files, check several things:
+   * Ensure that =Socket::PassAccessRights= is installed.   If not availabe,
+   * Ensure that file permissions allow all attachments to be read by the clamd backend task.
+   * If your system uses !AppArmor, be sure that the permissions allow !AppArmor to read the web attachments.  =/etc/apparmor.d/local/usr.sbin.clamd= should have a line to pemit read of attachments, such as: <verbatim> /var/www/foswiki/pub/** r</verbatim>
+
 ---++ Info
 
 |  Author: | GeorgeClark |
-|  Copyright: | © 2011, George Clark, Foswiki Contributors %BR%%BR%Module =Foswiki::Plugins::ClamAVScanPlugin::ClamAV= is based upon the CPAN module =File::Scan::ClamAV= %BR%Copyright Colin Faber All Rights Reserved.%BR%Originally based on the Clamd module authored by Matt Sergeant. |
+|  Copyright: | &copy; 2011-2016, George Clark, Foswiki Contributors %BR%%BR%Module =Foswiki::Plugins::ClamAVScanPlugin::ClamAV= is based upon the CPAN module =File::Scan::ClamAV= %BR%Copyright Colin Faber All Rights Reserved.%BR%Originally based on the Clamd module authored by Matt Sergeant. |
 |  License: | GPL ([[http://www.gnu.org/copyleft/gpl.html][GNU General Public License]]). =Foswiki::Plugins::ClamAVScanPlugin::ClamAV= is licensed under the terms of Perl itself. |
 |  Release: | %$RELEASE% |
 |  Version: | %$VERSION% |
 |  Change History: | <!-- versions below in reverse order --> |
+|  1.2   (31 Aug 2016) | Foswikitask:Item14149 Update for Foswiki 2.0+:%BR%\
+                         - Add configuration to set forceFilename scanning.%BR%\
+                         - Change REST calls to require POST and validation%BR%\
+                         - Support utf-8 / Unicode web, topic and attachment names. |
 |  1.1.0 (13 June 2011) | Foswikitask:Item10835 Add backwards compatibility with Foswiki 1.0 |
 |  1.0.1 (11 May 2011) | Foswikitask:Item10700 Initial version |
 |  Home: | http://foswiki.org/Extensions/%TOPIC% |
 |  Support: | http://foswiki.org/Support/%TOPIC% |
 
-%META:FILEATTACHMENT{name="ClamAVScanLogo.png" attr="h" comment="" date="1307416260" path="ClamAVScanLogo.png" size="51043" user="ProjectContributor" version="1"}%
+%META:FILEATTACHMENT{name="ClamAVScanLogo.png" attr="h" comment="" date="1472430582" size="51043" user="ProjectContributor" version="1"}%
