@@ -15,6 +15,11 @@
 %MAKETEXT{"The following threat was detected:"}%
    * ==%PARAM2%==
 %TMPL:END%
+%TMPL:DEF{"clamav_error"}%%MAKETEXT{"During upload of ([_1]) an error was encountered by !ClamAV. Please notify your [_2] administrator." args="%PARAM1%, <nop>%WIKITOOLNAME%"}%
+
+%MAKETEXT{"The following threat was detected:"}%
+   * ==%PARAM2%==
+%TMPL:END%
 
 %TMPL:DEF{"message"}%
 %INSTANTIATE%

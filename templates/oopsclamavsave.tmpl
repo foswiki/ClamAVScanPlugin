@@ -9,12 +9,22 @@
 
 %TMPL:DEF{"topicactionbuttons"}% [[%WEB%.%TOPIC%][%MAKETEXT{"OK"}%]] %TMPL:END%
 
-%TMPL:DEF{"message"}%
-%MAKETEXT{"During save of [_1] a threat was detected by !ClamAV. If you believe this is a false error, please notify your [_2] administrator." args="<nop>%WEB%.%TOPIC%, <nop>%WIKITOOLNAME%"}%
+%TMPL:DEF{"clamav_offline"}%%MAKETEXT{"The !ClamAV !AntiVirus engine appears to be offline.  Topic save is disabled."}%%TMPL:END%
+%TMPL:DEF{"clamav_save"}%%MAKETEXT{"During save of [_1] a threat was detected by !ClamAV. If you believe this is a false error, please notify your [_2] administrator." args="<nop>%WEB%.%TOPIC%, <nop>%WIKITOOLNAME%"}%
 
 %MAKETEXT{"The following threat was detected:"}%
    * ==%PARAM1%==
 
-%MAKETEXT{"Go back in your browser and modify the topic to remove the threat."}% 
+%MAKETEXT{"Go back in your browser and modify the topic to remove the threat."}%
+%TMPL:END%
+%TMPL:DEF{"clamav_error"}%%MAKETEXT{"During save of [_1] a error was encountered by !ClamAV. Please notify your [_2] administrator." args="<nop>%WEB%.%TOPIC%, <nop>%WIKITOOLNAME%"}%
 
+%MAKETEXT{"The following error was detected:"}%
+   * ==%PARAM1%==
+
+%MAKETEXT{"Go back in your browser and save your changes locally until the issue is resolved."}%
+%TMPL:END%
+
+%TMPL:DEF{"message"}%
+%INSTANTIATE%
 %TMPL:END%

@@ -231,7 +231,7 @@ sub beforeUploadHandler {
               . " attachment $attrs->{attachment} - Upload blocked." );
         throw Foswiki::OopsException(
             'clamavattach',
-            def    => 'clamav_upload',
+            def    => 'clamav_error',
             params => [ $attrs->{attachment}, $virus ]
         );
     }
@@ -258,21 +258,32 @@ sub beforeSaveHandler {
     my $av =
       new Foswiki::Plugins::ClamAVScanPlugin::ClamAV( port => "$clamdPort" );
 
-    return unless ( $av->ping );
+    unless ( $av->ping ) {
+        return unless $Foswiki::cfg{Plugins}{ClamAVScanPlugin}{mandatoryScan};
+        throw Foswiki::OopsException( 'clamavsave', def => 'clamav_offline', );
+    }
 
     my ( $ok, $virus ) = $av->scan_string($text);
 
     if ( $ok eq 'FOUND' ) {
         Foswiki::Func::writeWarning(
             "$virus detected in $web.$topic text during save - Save blocked.");
-        throw Foswiki::OopsException( 'clamavsave', params => [$virus] );
+        throw Foswiki::OopsException(
+            'clamavsave',
+            def    => 'clamav_save',
+            params => [$virus]
+        );
     }
     elsif ($ok eq 'ERROR'
         && $Foswiki::cfg{Plugins}{ClamAVScanPlugin}{mandatoryScan} )
     {
         Foswiki::Func::writeWarning(
             "ERROR detected in scan: $virus" . "Save blocked." );
-        throw Foswiki::OopsException( 'clamavsave', params => [$virus] );
+        throw Foswiki::OopsException(
+            'clamavsave',
+            def    => 'clamav_error',
+            params => [$virus]
+        );
     }
 
     return 1;
