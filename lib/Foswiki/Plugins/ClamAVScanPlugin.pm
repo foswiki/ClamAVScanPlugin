@@ -110,6 +110,10 @@ Registered Handler: Implements the CLAMAVSTATUS macro. Returns the status string
 
 sub _CLAMAVSTATUS {
 
+    return
+      "<div class='foswikiAlert'>Status restricted to administrators.</div>"
+      unless Foswiki::Func::isAnAdmin();
+
     my $report = "*<nop>ClamAV Status* \n";
 
     $report .= "   * Connecting to socket ==$clamdPort== \n";
@@ -237,7 +241,7 @@ sub beforeUploadHandler {
 
 ---++ StaticMethod beforeSaveHandler()
 
-Intercepts an upated topic prior to save.
+Intercepts an updated topic prior to save.
 
 Passes the topic text to clamd for scanning.  Throws an exception:
    * scanTopics requested and clamd reported a threat in the file.
@@ -280,6 +284,7 @@ sub _reloadSignatures {
     my ( $session, $subject, $verb, $response ) = @_;
 
     return _notAuth( $session, 'reload' ) unless Foswiki::Func::isAnAdmin();
+
     Foswiki::Func::writeWarning("Signature reload requested.");
     my $av =
       new Foswiki::Plugins::ClamAVScanPlugin::ClamAV( port => "$clamdPort" );
@@ -289,6 +294,16 @@ sub _reloadSignatures {
     $av->reload();
 
     return _reloadResult($session);
+}
+
+sub _readdir {
+
+    if ($Foswiki::UNICODE) {
+        map { NFC( Encode::decode_utf8($_) ) } readdir( $_[0] );
+    }
+    else {
+        readdir( $_[0] );
+    }
 }
 
 =begin TML
@@ -304,17 +319,9 @@ This function is only available to administrators.
 
 =cut
 
-sub _readdir {
-
-    if ($Foswiki::UNICODE) {
-        map { NFC( Encode::decode_utf8($_) ) } readdir( $_[0] );
-    }
-    else {
-        readdir( $_[0] );
-    }
-}
-
 sub _scanAttachments {
+
+    #   my ( $session, $subject, $verb, $response ) = @_;
     my $session = shift;
 
     return _notAuth( $session, 'scan' ) unless ( Foswiki::Func::isAnAdmin() );
@@ -322,21 +329,16 @@ sub _scanAttachments {
     my $query = Foswiki::Func::getCgiQuery();
     my $resp  = '';
 
+    my $web   = $session->{webName};
+    my $topic = $session->{topicName};
+
   # Old versions use "topic" param which collides with the core topic parameter.
-    my $scanTopic = $query->param('scan') || $query->param('topic');
+    my $scanTopic = $query->param('scan') || "$web.$topic";
     ( my $scanWeb, $scanTopic ) =
       Foswiki::Func::normalizeWebTopicName( undef, $scanTopic );
     $scanWeb = Foswiki::Sandbox::untaint( $scanWeb,
         \&Foswiki::Sandbox::validateWebName );
     $scanTopic = Foswiki::Sandbox::untaint( $scanTopic,
-        \&Foswiki::Sandbox::validateTopicName );
-
-    my ( $web, $topic ) =
-      Foswiki::Func::normalizeWebTopicName( undef,
-        scalar $query->param('redirectto') );
-    $web =
-      Foswiki::Sandbox::untaint( $web, \&Foswiki::Sandbox::validateWebName );
-    $topic = Foswiki::Sandbox::untaint( $topic,
         \&Foswiki::Sandbox::validateTopicName );
 
     my $dir = "$Foswiki::cfg{PubDir}/$scanWeb/$scanTopic";

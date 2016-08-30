@@ -45,29 +45,31 @@ This plugin is also able to scan the topic text prior to save.  This enables sca
 This macro returns status information from the =clamd= daemon.  Or reports any
 failure messages if unable to connect to the clamd socket.
 
+<dirtyarea>
 %CLAMAVSTATUS{}%
+</dirtyarea>
 
 ---+++ Scanning existing attachments.
 
 The current attachments and attachment rcs =,v= files of an existing topic can be scanned using a rest handler.  Each attachment and corresponding rcs file if it exists is passed to clamd for scanning.  Results of the scan are reported back in the rest results.
-There is no facility to request scan of an individual attachment.  Note that the scan is done by reading the contents of the directory. The attachment API is not used. 
+There is no facility to request scan of an individual attachment.  The scan is done by reading the contents of the directory. The attachment API is not used. 
 
 The rest handler takes two parameters: 
-| =scan= | The =Web.Topic= name that will be subject of the attachment scan. |
-| =redirectto= | Topic name to return to after the scan using the "OK" link.  (Note that the rest handler always generates an oops response, even when no threats are found. |
+%TABLE{sort="off"}%
+| *Parameter* | *Usage* | *Default* |
+| =topic= | The =Web.Topic= used as the BASEWEB.BASETOPIC. | _System default topic_ |
+| =scan= | The =Web.Topic= name that will be subject of the attachment scan. | =topic= |
 
 <div class="foswikiHelp">Note that the extensions does not scan subdirectories of the attachment directory. If Foswiki is configured for the =PlainFileStore=, then attachment history will not be scanned.</div>
 
 This operation is restricted to users in the Admin group.
 ---++++ Web interface:
 
-<dirtyarea>
 <form name="clamscan" action="%SCRIPTURL{rest}%/ClamAVScanPlugin/scan" method="post">
 <input name="scan" class="foswikiInputField" type="text" value="%URLPARAM{"scan"}%" size="40" />
-<input name="redirectto" class="foswikiInputField" type="hidden" value="%BASEWEB%.%BASETOPIC%" />
+<input name="topic" type="hidden" value="%BASEWEB%.%BASETOPIC%" />
 <input type="submit" class="foswikiSubmit" value="Scan attachments" />
 </form>
-</dirtyarea>
 
 ---++++ Shell interface
 
@@ -82,12 +84,10 @@ This plugin includes a rest handler to force reload of the virus signatures.  Th
 
 Note that reloading the signatures does not download newer signatures from !ClamAV.  It only reloads the existing signature files into the clamd daemon.
 
-<dirtyarea>
 <form name="clamreload" action="%SCRIPTURL{rest}%/ClamAVScanPlugin/reload" method="post">
-<input name="redirectto" class="foswikiInputField" type="hidden" value="%BASEWEB%.%BASETOPIC%" />
+<input name="topic" type="hidden" value="%BASEWEB%.%BASETOPIC%" />
 <input type="submit" class="foswikiSubmit" value="ReloadSignatures" />
 </form>
-</dirtyarea>
 
 ---++ Preferences
 
