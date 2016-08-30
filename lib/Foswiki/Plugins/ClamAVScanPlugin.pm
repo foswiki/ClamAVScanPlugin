@@ -222,7 +222,9 @@ sub beforeUploadHandler {
             params => [ $attrs->{attachment}, $virus ]
         );
     }
-    elsif ( $ok eq 'ERROR' ) {
+    elsif ($ok eq 'ERROR'
+        && $Foswiki::cfg{Plugins}{ClamAVScanPlugin}{mandatoryScan} )
+    {
         Foswiki::Func::writeWarning( "ERROR detected in scan: $virus"
               . $web . '.'
               . $topic
@@ -263,6 +265,13 @@ sub beforeSaveHandler {
     if ( $ok eq 'FOUND' ) {
         Foswiki::Func::writeWarning(
             "$virus detected in $web.$topic text during save - Save blocked.");
+        throw Foswiki::OopsException( 'clamavsave', params => [$virus] );
+    }
+    elsif ($ok eq 'ERROR'
+        && $Foswiki::cfg{Plugins}{ClamAVScanPlugin}{mandatoryScan} )
+    {
+        Foswiki::Func::writeWarning(
+            "ERROR detected in scan: $virus" . "Save blocked." );
         throw Foswiki::OopsException( 'clamavsave', params => [$virus] );
     }
 
