@@ -1,7 +1,7 @@
-%META:TOPICINFO{author="ProjectContributor" date="1407719385" format="1.1" version="1"}%
+%META:TOPICINFO{author="ProjectContributor" date="1472694977" format="1.1" version="1"}%
 %META:TOPICPARENT{name="ClamAVScanPlugin"}%
 #VarCLAMAVSTATUS
----+++ CLAMAVSTATUS -- report !ClamAV availability and version
+---+++ CLAMAVSTATUS -- report !ClamAV availability and version (Administrators only)
    * The =%<nop>CLAMAVSTATUS{}%= variable is handled by the ClamAVScanPlugin
    * Syntax: =%<nop>CLAMAVSTATUS{}%=
    * Related: ClamAVStatusPlugin

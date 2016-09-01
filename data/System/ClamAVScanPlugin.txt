@@ -1,4 +1,4 @@
-%META:TOPICINFO{author="ProjectContributor" comment="" date="1472430582" format="1.1" version="1"}%
+%META:TOPICINFO{author="ProjectContributor" comment="" date="1472694977" format="1.1" version="1"}%
 %META:TOPICPARENT{name="Plugins"}%
 <!--
 One line description, required for extensions repository catalog.
@@ -43,7 +43,8 @@ This plugin is also able to scan the topic text prior to save.  This enables sca
 ---+++ =%<nop>CLAMAVSTATUS%=
 
 This macro returns status information from the =clamd= daemon.  Or reports any
-failure messages if unable to connect to the clamd socket.
+failure messages if unable to connect to the clamd socket.  This information
+is only displayed for administrators.
 
 <dirtyarea>
 %CLAMAVSTATUS{}%
@@ -65,11 +66,13 @@ The rest handler takes two parameters:
 This operation is restricted to users in the Admin group.
 ---++++ Web interface:
 
+<dirtyarea>
 <form name="clamscan" action="%SCRIPTURL{rest}%/ClamAVScanPlugin/scan" method="post">
 <input name="scan" class="foswikiInputField" type="text" value="%URLPARAM{"scan"}%" size="40" />
 <input name="topic" type="hidden" value="%BASEWEB%.%BASETOPIC%" />
 <input type="submit" class="foswikiSubmit" value="Scan attachments" />
 </form>
+</dirtyarea>
 
 ---++++ Shell interface
 
@@ -84,10 +87,12 @@ This plugin includes a rest handler to force reload of the virus signatures.  Th
 
 Note that reloading the signatures does not download newer signatures from !ClamAV.  It only reloads the existing signature files into the clamd daemon.
 
+<dirtyarea>
 <form name="clamreload" action="%SCRIPTURL{rest}%/ClamAVScanPlugin/reload" method="post">
 <input name="topic" type="hidden" value="%BASEWEB%.%BASETOPIC%" />
 <input type="submit" class="foswikiSubmit" value="ReloadSignatures" />
 </form>
+</dirtyarea>
 
 ---++ Preferences
 
@@ -155,4 +160,4 @@ If ClamAV is reporting that it is unable to read the files, check several things
 |  Home: | http://foswiki.org/Extensions/%TOPIC% |
 |  Support: | http://foswiki.org/Support/%TOPIC% |
 
-%META:FILEATTACHMENT{name="ClamAVScanLogo.png" attr="h" comment="" date="1472430582" size="51043" user="ProjectContributor" version="1"}%
+%META:FILEATTACHMENT{name="ClamAVScanLogo.png" attr="h" comment="" date="1472694977" size="51043" user="ProjectContributor" version="1"}%
