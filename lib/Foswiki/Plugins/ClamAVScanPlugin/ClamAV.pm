@@ -65,7 +65,12 @@ sub ping {
 
     Foswiki::Func::writeDebug("Sending zPING") if TRACE;
     $this->_send( $conn, "zPING\x00" );
-    chop( my $response = $conn->getline );
+    my $response = $conn->getline;
+    unless ( defined $response ) {
+        return $this->errstr("No response from !ClamAV service.");
+    }
+
+    chop $response;
 
     # Run out the buffer?
     1 while (<$conn>);
@@ -75,7 +80,7 @@ sub ping {
     return (
         $response eq "PONG"
         ? 1
-        : $this->errstr("Unknown reponse from ClamAV service: $response")
+        : $this->errstr("Unknown reponse from !ClamAV service: $response")
     );
 }
 
@@ -357,7 +362,7 @@ sub _scan_shallow {
         for my $result ( $conn->getline ) {
             chomp($result);
             $result =~ s/\x00$//g;    # remove null terminator if present;
-            $result = decode_utf8($result) if ( $Foswiki::UNICODE);
+            $result = decode_utf8($result) if ($Foswiki::UNICODE);
             my ( $fn, $msg, $code ) =
               $result =~ m/^(.*?):\s?(.*?)\s?(OK|ERROR|FOUND)$/;
             my $fname = ( $cmd eq 'SCAN' ) ? $fn : $file;
