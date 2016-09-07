@@ -24,7 +24,7 @@ $Foswiki::cfg{Plugins}{ClamAVScanPlugin}{mandatoryScan} = $FALSE;
 # block topic saves.
 $Foswiki::cfg{Plugins}{ClamAVScanPlugin}{scanTopics} = $FALSE;
 
-# **BOOLEAN**
+# **BOOLEAN EXPERT**
 # ClamAVScanPlugin normally opens each attachment in Foswiki and then passes the file handle
 # to the clamd daemon. Set this switch to force the plugin to send the file names to the 
 # clamd backend.   Note that if the clamd daemon does not have authorization to read the file
